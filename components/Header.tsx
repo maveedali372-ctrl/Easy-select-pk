@@ -23,7 +23,7 @@ const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClo
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <style>
-                        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8fafc; overflow: hidden; }
+                        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background-color: transparent; }
                     </style>
                 </head>
                 <body>
@@ -69,13 +69,14 @@ const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClo
                     <p className="text-xs text-slate-500">Wait {timeLeft}s to earn rewards</p>
                  </div>
 
-                 <div className="bg-slate-50 border-2 border-slate-100 border-dashed rounded-xl flex items-center justify-center p-2 min-h-[80px] mb-6 overflow-hidden relative">
+                 <div className="bg-slate-50 border-2 border-slate-100 border-dashed rounded-xl flex items-center justify-center py-2 mb-6 overflow-hidden relative min-h-[60px]">
                     <iframe 
                         ref={iframeRef} 
                         width="320" 
-                        height="60" 
+                        height="50" 
                         title="Ad Container"
-                        style={{ border: 'none', maxWidth: '100%' }}
+                        scrolling="no"
+                        style={{ border: 'none', maxWidth: '100%', display: 'block' }}
                     ></iframe>
                  </div>
 
