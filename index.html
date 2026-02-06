@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>EasySelect PK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              telenor: '#00A3E0',
+              jazz: '#ed1c24',
+              zong: '#8cc34a',
+              ufone: '#f36f21',
+              'bg-gray': '#f4f7f9',
+            },
+            animation: {
+              'spin-slow': 'spin 3s linear infinite',
+              'bounce-slow': 'bounce 2s infinite',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        /* Prevent global horizontal scroll */
+        body {
+            overflow-x: hidden;
+            overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile if not desired */
+        }
+        
+        /* Custom scrollbar hiding for clean horizontal scrolls */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* 3D Coin Animation */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .preserve-3d {
+            transform-style: preserve-3d;
+        }
+        @keyframes rotate3d {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        .animate-rotate-3d {
+            animation: rotate3d 2.5s infinite linear;
+        }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-bg-gray text-slate-800 antialiased selection:bg-blue-200 overflow-x-hidden">
+    <div id="root"></div>
+  </body>
+</html>
