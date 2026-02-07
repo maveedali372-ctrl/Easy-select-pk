@@ -8,6 +8,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [coinMultiplier, setCoinMultiplier] = useState<number>(20);
+  const [welcomeBonus, setWelcomeBonus] = useState<number>(20);
   const [referralCodeFromUrl, setReferralCodeFromUrl] = useState<string>('');
 
   // Check for existing session and URL params on load
@@ -59,7 +60,7 @@ const App: React.FC = () => {
     }
 
     // New User Registration
-    const coins = 20; // Welcome Bonus
+    const coins = welcomeBonus; 
     
     // Process Referral Reward
     if (usedReferralCode && db[usedReferralCode] && usedReferralCode !== newUser.phone) {
@@ -86,8 +87,8 @@ const App: React.FC = () => {
     localStorage.removeItem('easyselect_pk_user');
     setUser(null);
     setIsNewUser(false);
-    // Optional: clear URL params
-    window.history.pushState({}, document.title, window.location.pathname);
+    // Force reload to clear any ad scripts from memory/DOM
+    window.location.reload(); 
   };
 
   if (loading) return null;
@@ -105,6 +106,8 @@ const App: React.FC = () => {
             user={user} 
             coinMultiplier={coinMultiplier}
             setCoinMultiplier={setCoinMultiplier}
+            welcomeBonus={welcomeBonus}
+            setWelcomeBonus={setWelcomeBonus}
             isNewUser={isNewUser}
             onLogout={handleLogout}
           />

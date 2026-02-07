@@ -56,6 +56,25 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onOpenAdmin, balance, o
       </div>
 
       <div className="space-y-3">
+        {/* Admin Control - Moved to top for easier access */}
+        {user.phone === '03198428224' && (
+            <button 
+                onClick={onOpenAdmin}
+                className="w-full bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 rounded-2xl shadow-lg shadow-slate-300 flex items-center justify-between group active:scale-95 transition-all mb-4 border border-slate-700"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-yellow-400">
+                        <i className="fas fa-shield-alt text-xl"></i>
+                    </div>
+                    <div className="text-left">
+                        <span className="font-bold block text-lg text-yellow-400">Admin Console</span>
+                        <span className="text-xs text-slate-400 font-normal">Tap to manage app</span>
+                    </div>
+                </div>
+                <i className="fas fa-chevron-right text-slate-500 group-hover:text-white transition-colors"></i>
+            </button>
+        )}
+
         {/* Invite Feature */}
         <button 
             onClick={handleInviteClick}
@@ -82,25 +101,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, onOpenAdmin, balance, o
             </div>
             <i className="fas fa-chevron-right text-slate-300"></i>
         </button>
-
-        {/* Admin Control - Only visible to specific admin number */}
-        {user.phone === '03198428224' && (
-            <button 
-                onClick={onOpenAdmin}
-                className="w-full bg-slate-800 text-white p-4 rounded-2xl shadow-lg shadow-slate-200 flex items-center justify-between group active:scale-95 transition-all"
-            >
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
-                        <i className="fas fa-shield-alt"></i>
-                    </div>
-                    <div className="text-left">
-                        <span className="font-bold block">Admin Control</span>
-                        <span className="text-xs text-slate-400 font-normal">Manage Bundles & Lists</span>
-                    </div>
-                </div>
-                <i className="fas fa-arrow-right opacity-50"></i>
-            </button>
-        )}
         
         {/* Logout Button */}
         <button 

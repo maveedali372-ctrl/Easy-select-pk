@@ -4,6 +4,7 @@ import { NETWORKS } from '../constants';
 
 interface BannerSliderProps {
     featuredPackages?: PackageData[];
+    showAds?: boolean;
 }
 
 const DEFAULT_BANNERS = [
@@ -12,7 +13,7 @@ const DEFAULT_BANNERS = [
   { id: 'def3', color: 'from-orange-500 to-red-500', title: 'Watch Ads', subtitle: 'Free Coins Every Hour', icon: 'fa-play-circle', netId: null },
 ];
 
-const BannerSlider: React.FC<BannerSliderProps> = ({ featuredPackages = [] }) => {
+const BannerSlider: React.FC<BannerSliderProps> = ({ featuredPackages = [], showAds = true }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Combine default banners with featured packages
@@ -40,12 +41,17 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ featuredPackages = [] }) =>
           };
       });
 
-      // If no featured packages, return defaults
-      if (featuredSlides.length === 0) return DEFAULT_BANNERS;
+      // Combine featured and default banners
+      let combined = [...featuredSlides, ...DEFAULT_BANNERS];
+      
+      // If ads are disabled (e.g., for admin), filter out the "Watch Ads" banner
+      if (!showAds) {
+          combined = combined.filter(b => b.title !== 'Watch Ads');
+      }
 
       // Return combined (max 5 slides total to avoid clutter)
-      return [...featuredSlides, ...DEFAULT_BANNERS].slice(0, 5);
-  }, [featuredPackages]);
+      return combined.slice(0, 5);
+  }, [featuredPackages, showAds]);
 
   useEffect(() => {
     const timer = setInterval(() => {

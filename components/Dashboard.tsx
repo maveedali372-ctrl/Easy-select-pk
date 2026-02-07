@@ -19,11 +19,13 @@ interface DashboardProps {
   user: UserProfile;
   coinMultiplier: number;
   setCoinMultiplier: (val: number) => void;
+  welcomeBonus: number;
+  setWelcomeBonus: (val: number) => void;
   isNewUser?: boolean;
   onLogout: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier, setCoinMultiplier, isNewUser, onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier, setCoinMultiplier, welcomeBonus, setWelcomeBonus, isNewUser, onLogout }) => {
   // Navigation State
   const [activeTab, setActiveTab] = useState('Home');
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -56,11 +58,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
     if (isNewUser) {
         setPopupConfig({
             show: true,
-            amount: 20,
+            amount: welcomeBonus,
             reason: 'Welcome Bonus'
         });
     }
-  }, [isNewUser]);
+  }, [isNewUser, welcomeBonus]);
 
   // Sync userCoins if prop changes (e.g. re-login logic)
   useEffect(() => {
@@ -173,6 +175,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
                 onBack={() => setIsAdminMode(false)}
                 coinMultiplier={coinMultiplier}
                 setCoinMultiplier={setCoinMultiplier}
+                welcomeBonus={welcomeBonus}
+                setWelcomeBonus={setWelcomeBonus}
                 userRequests={history}
                 onUpdateRequestStatus={handleUpdateStatus}
             />
@@ -199,7 +203,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
             return (
                 <>
                     {/* Banner Slider */}
-                    <BannerSlider featuredPackages={featuredPackages} />
+                    <BannerSlider featuredPackages={featuredPackages} showAds={!isAdminUser} />
 
                     {/* Search Bar */}
                     <div className="px-5 mb-4">
@@ -265,6 +269,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
                 coins={userCoins} 
                 onWatchAd={handleWatchAd}
                 showAds={!isAdminUser}
+                isAdmin={isAdminUser}                      // Pass prop
+                onOpenAdmin={() => setIsAdminMode(true)}   // Pass handler
               />
           )}
 

@@ -5,6 +5,8 @@ interface HeaderProps {
   coins: number;
   onWatchAd: () => void;
   showAds?: boolean;
+  isAdmin?: boolean;
+  onOpenAdmin: () => void;
 }
 
 const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClose, onClaim }) => {
@@ -105,8 +107,9 @@ const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClo
     );
 };
 
-const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = true }) => {
+const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = true, isAdmin = false, onOpenAdmin }) => {
   const [showAdModal, setShowAdModal] = useState(false);
+  const [secretTaps, setSecretTaps] = useState(0);
 
   const handleAdClick = () => {
     setShowAdModal(true);
@@ -115,6 +118,27 @@ const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = t
   const handleClaimReward = () => {
       setShowAdModal(false);
       onWatchAd(); // This triggers the coin update in Dashboard
+  };
+
+  // Secret Admin Access: Reset taps if no activity for 1 second
+  useEffect(() => {
+    if (secretTaps > 0) {
+        const timer = setTimeout(() => setSecretTaps(0), 1000);
+        return () => clearTimeout(timer);
+    }
+  }, [secretTaps]);
+
+  const handleSecretTap = () => {
+      const newCount = secretTaps + 1;
+      setSecretTaps(newCount);
+      
+      if (newCount >= 5) {
+          const pin = window.prompt("Enter Admin Access PIN:");
+          if (pin === "1234") { 
+             onOpenAdmin();
+          }
+          setSecretTaps(0);
+      }
   };
 
   return (
@@ -135,13 +159,27 @@ const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = t
               <i className="fas fa-pencil-alt text-[10px] opacity-80 cursor-pointer"></i>
             </div>
             
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
+            <div 
+                onClick={handleSecretTap}
+                className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 cursor-pointer active:scale-95 transition-transform select-none"
+            >
               <span className="text-sm font-medium tracking-wide">Level 1 User</span>
               <i className="fas fa-shield-alt text-xs"></i>
             </div>
           </div>
           
           <div className="flex gap-4 mt-1">
+            {/* Admin Shortcut */}
+            {isAdmin && (
+                <button 
+                    onClick={onOpenAdmin}
+                    className="w-10 h-10 -mt-1 rounded-full bg-white/20 flex items-center justify-center text-yellow-300 hover:bg-white/30 hover:scale-105 transition-all shadow-lg shadow-black/10 border border-white/20"
+                    title="Open Admin Panel"
+                >
+                    <i className="fas fa-user-shield text-lg"></i>
+                </button>
+            )}
+
             <button className="text-white hover:opacity-80 transition-opacity">
                 <i className="fas fa-search text-xl"></i>
             </button>

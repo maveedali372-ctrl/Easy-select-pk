@@ -11,6 +11,8 @@ interface AdminPanelProps {
   onBack: () => void;
   coinMultiplier: number;
   setCoinMultiplier: (val: number) => void;
+  welcomeBonus: number;
+  setWelcomeBonus: (val: number) => void;
   userRequests: HistoryItem[];
   onUpdateRequestStatus: (timestamp: number, status: 'Approved' | 'Rejected') => void;
 }
@@ -23,6 +25,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onBack, 
     coinMultiplier, 
     setCoinMultiplier,
+    welcomeBonus,
+    setWelcomeBonus,
     userRequests,
     onUpdateRequestStatus
 }) => {
@@ -374,7 +378,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <i className="fas fa-coins text-yellow-500"></i> Coin Configuration
                   </h3>
                   
-                  <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+                  <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700 mb-4">
                       <label className="text-sm text-slate-300 font-bold uppercase block mb-4">
                           Coin Cost Multiplier (Current: {coinMultiplier}x)
                       </label>
@@ -393,6 +397,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           />
                           <div className="w-16 h-12 bg-slate-800 border border-slate-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
                               {coinMultiplier}
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Welcome Bonus Settings */}
+                  <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+                      <label className="text-sm text-slate-300 font-bold uppercase block mb-4">
+                          New User Welcome Bonus (Current: {welcomeBonus} Coins)
+                      </label>
+                      <p className="text-xs text-slate-400 mb-4">
+                          Coins given to a new user immediately upon registration.
+                      </p>
+                      
+                      <div className="flex items-center gap-4">
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="500" 
+                            step="5"
+                            value={welcomeBonus} 
+                            onChange={(e) => setWelcomeBonus(parseInt(e.target.value))}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <div className="w-16 h-12 bg-slate-800 border border-slate-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                              {welcomeBonus}
                           </div>
                       </div>
                   </div>
