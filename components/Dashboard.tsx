@@ -48,6 +48,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
     reason: ''
   });
 
+  // Admin Check (Hardcoded as per requirement)
+  const isAdminUser = initialUser.phone === '03198428224';
+
   // Check for Welcome Bonus on Mount
   useEffect(() => {
     if (isNewUser) {
@@ -178,7 +181,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
 
     switch (activeTab) {
         case 'History':
-            return <HistoryView history={history} />;
+            return <HistoryView history={history} showAds={!isAdminUser} />;
         
         case 'Profile':
             return (
@@ -222,8 +225,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
                         <TabFilter currentTab={currentTab} onSelect={setCurrentTab} />
                     </div>
 
-                    {/* Dashboard Ad */}
-                    <DashboardAd />
+                    {/* Dashboard Ad (Hidden for Admin) */}
+                    {!isAdminUser && <DashboardAd />}
 
                     <div className="px-4 mt-2 mb-4">
                         <div className="flex justify-between items-center mb-4 mt-2">
@@ -250,8 +253,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
     // FIX: Main container is fixed height, scroll happens INSIDE the content area
     <div className="flex flex-col h-screen bg-bg-gray relative overflow-hidden">
       
-      {/* Popunder Ad Component (Invisible logic) */}
-      <PopunderAd />
+      {/* Popunder Ad Component (Invisible logic) - Hidden for Admin */}
+      {!isAdminUser && <PopunderAd />}
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto pb-28 scrollbar-hide">
@@ -261,6 +264,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
                 userName={initialUser.name} 
                 coins={userCoins} 
                 onWatchAd={handleWatchAd}
+                showAds={!isAdminUser}
               />
           )}
 

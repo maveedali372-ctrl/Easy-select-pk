@@ -4,6 +4,7 @@ interface HeaderProps {
   userName: string;
   coins: number;
   onWatchAd: () => void;
+  showAds?: boolean;
 }
 
 const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClose, onClaim }) => {
@@ -104,7 +105,7 @@ const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClo
     );
 };
 
-const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd }) => {
+const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = true }) => {
   const [showAdModal, setShowAdModal] = useState(false);
 
   const handleAdClick = () => {
@@ -183,20 +184,22 @@ const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-5">
-            <button 
-                onClick={handleAdClick}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-2 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-slate-200"
-            >
-                <div className="w-6 h-6 bg-yellow-400 text-slate-900 rounded-full flex items-center justify-center font-bold text-[10px]">
-                    <i className="fas fa-play"></i>
-                </div>
-                <div className="flex flex-col items-start leading-none">
-                    <span className="text-xs font-bold">Watch Video Ad</span>
-                    <span className="text-[10px] text-yellow-400 font-bold">+5 Coins Reward</span>
-                </div>
-            </button>
-        </div>
+        {showAds && (
+            <div className="mt-5">
+                <button 
+                    onClick={handleAdClick}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-2 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-slate-200"
+                >
+                    <div className="w-6 h-6 bg-yellow-400 text-slate-900 rounded-full flex items-center justify-center font-bold text-[10px]">
+                        <i className="fas fa-play"></i>
+                    </div>
+                    <div className="flex flex-col items-start leading-none">
+                        <span className="text-xs font-bold">Watch Video Ad</span>
+                        <span className="text-[10px] text-yellow-400 font-bold">+5 Coins Reward</span>
+                    </div>
+                </button>
+            </div>
+        )}
       </div>
 
       {/* Ad Modal Overlay */}

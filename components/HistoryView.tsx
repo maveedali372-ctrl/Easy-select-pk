@@ -5,15 +5,16 @@ import HistoryAd from './HistoryAd';
 
 interface HistoryViewProps {
   history: HistoryItem[];
+  showAds?: boolean;
 }
 
-const HistoryView: React.FC<HistoryViewProps> = ({ history }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ history, showAds = true }) => {
   return (
     <div className="px-5 pt-4 pb-24 animate-fade-in">
       <h2 className="text-xl font-bold text-slate-800 mb-2">My Orders</h2>
       
       {/* History Ad Placement */}
-      <HistoryAd />
+      {showAds && <HistoryAd />}
 
       {history.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[40vh] opacity-50 mt-4">
