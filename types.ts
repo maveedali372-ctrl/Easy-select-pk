@@ -29,12 +29,32 @@ export interface PackageData {
   isFeatured?: boolean;
 }
 
+export interface AdminVideo {
+  id: string;
+  title: string;
+  url: string;
+  sourceType: 'embed' | 'upload'; // New field to distinguish source
+  duration: number; // Required watch time in minutes
+  timestamp: number;
+  likes?: number;     // New: Like count
+  dislikes?: number;  // New: Dislike count
+}
+
+export interface Promotion {
+  id: string;
+  imageUrl: string;
+  timestamp: number;
+  packageId?: string; // Optional link to a specific package
+}
+
 export interface HistoryItem {
-  package: PackageData;
+  package?: PackageData; // Optional now
+  video?: AdminVideo;    // New field for video logs
+  isVideo?: boolean;     // Discriminator
   date: string; // ISO string
   timestamp: number;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  targetPhone: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Watched';
+  targetPhone?: string;
 }
 
 export interface NetworkConfig {

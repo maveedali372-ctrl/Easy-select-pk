@@ -7,6 +7,7 @@ interface HeaderProps {
   showAds?: boolean;
   isAdmin?: boolean;
   onOpenAdmin: () => void;
+  onOpenNews: () => void;
 }
 
 const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClose, onClaim }) => {
@@ -107,7 +108,7 @@ const AdModal: React.FC<{ onClose: () => void; onClaim: () => void }> = ({ onClo
     );
 };
 
-const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = true, isAdmin = false, onOpenAdmin }) => {
+const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = true, isAdmin = false, onOpenAdmin, onOpenNews }) => {
   const [showAdModal, setShowAdModal] = useState(false);
   const [secretTaps, setSecretTaps] = useState(0);
 
@@ -169,6 +170,16 @@ const Header: React.FC<HeaderProps> = ({ userName, coins, onWatchAd, showAds = t
           </div>
           
           <div className="flex gap-4 mt-1">
+            {/* News / Announcements Icon */}
+            <button 
+                onClick={onOpenNews}
+                className="w-10 h-10 -mt-1 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 hover:scale-105 transition-all shadow-lg shadow-black/10 border border-white/20 relative"
+                title="Announcements"
+            >
+                <i className="fas fa-bullhorn text-lg"></i>
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            </button>
+
             {/* Admin Shortcut */}
             {isAdmin && (
                 <button 

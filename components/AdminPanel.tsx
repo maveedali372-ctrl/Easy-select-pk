@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { PackageData, NetworkType, HistoryItem } from '../types';
+import React, { useState, useMemo, useRef } from 'react';
+import { PackageData, NetworkType, HistoryItem, AdminVideo, Promotion } from '../types';
 import { NETWORKS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
 
@@ -15,6 +15,12 @@ interface AdminPanelProps {
   setWelcomeBonus: (val: number) => void;
   userRequests: HistoryItem[];
   onUpdateRequestStatus: (timestamp: number, status: 'Approved' | 'Rejected') => void;
+  adminVideos: AdminVideo[];
+  onAddVideo: (video: AdminVideo) => void;
+  onDeleteVideo: (id: string) => void;
+  promotions: Promotion[];
+  onAddPromotion: (promo: Promotion) => void;
+  onDeletePromotion: (id: string) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -28,14 +34,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     welcomeBonus,
     setWelcomeBonus,
     userRequests,
-    onUpdateRequestStatus
+    onUpdateRequestStatus,
+    adminVideos,
+    onAddVideo,
+    onDeleteVideo,
+    promotions,
+    onAddPromotion,
+    onDeletePromotion
 }) => {
-  const [activeTab, setActiveTab] = useState<'add' | 'list' | 'requests' | 'settings'>('list');
+  const [activeTab, setActiveTab] = useState<'add' | 'list' | 'requests' | 'settings' | 'videos' | 'promos'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [requestSearchTerm, setRequestSearchTerm] = useState('');
   const [editingPkgId, setEditingPkgId] = useState<string | null>(null);
   
-  // Form State
+  // Package Form State
   const [net, setNet] = useState<NetworkType>('telenor');
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -43,13 +55,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [type, setType] = useState('Monthly');
   const [validity, setValidity] = useState('');
   const [coinRequired, setCoinRequired] = useState(true); 
-  const [isFeatured, setIsFeatured] = useState(false); // New featured state
+  const [isFeatured, setIsFeatured] = useState(false); 
   
-  // New Furniture Fields
   const [internet, setInternet] = useState('');
   const [onNet, setOnNet] = useState('');
   const [offNet, setOffNet] = useState('');
   const [sms, setSms] = useState('');
+
+  // Video Form State
+  const [vidTitle, setVidTitle] = useState('');
+  const [vidSourceType, setVidSourceType] = useState<'embed' | 'upload'>('embed');
+  const [vidUrl, setVidUrl] = useState('');
+  const [vidDuration, setVidDuration] = useState(1);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Promo Form State
+  const [promoPackageId, setPromoPackageId] = useState('');
+  const [tempPromoImage, setTempPromoImage] = useState<string | null>(null);
+  const promoInputRef = useRef<HTMLInputElement>(null);
 
   // AI State
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -115,6 +139,99 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     
     resetForm();
     setActiveTab('list');
+  };
+
+  // Handle Video File Upload
+  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Limit size to avoid localStorage crash (Changed to 100MB)
+      if (file.size > 100 * 1024 * 1024) {
+          alert("File is too large! Please upload a video smaller than 100MB.");
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+      }
+
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          setVidUrl(reader.result as string);
+          setIsUploading(false);
+      };
+      reader.onerror = () => {
+          alert("Failed to read file");
+          setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+  };
+
+  // Handle Promo Image Selection (Preview)
+  const handlePromoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert("Image too large. Max 5MB.");
+        if (promoInputRef.current) promoInputRef.current.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        setTempPromoImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePromoSubmit = () => {
+      if (!tempPromoImage) {
+          alert("Please select an image first.");
+          return;
+      }
+
+      const promo: Promotion = {
+          id: Date.now().toString(),
+          imageUrl: tempPromoImage,
+          timestamp: Date.now(),
+          packageId: promoPackageId || undefined
+      };
+
+      onAddPromotion(promo);
+      alert("Promotion Banner Added! It will remain active for 24 hours.");
+      
+      // Reset
+      setTempPromoImage(null);
+      setPromoPackageId('');
+      if (promoInputRef.current) promoInputRef.current.value = "";
+  };
+
+  const handleVideoSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!vidTitle || !vidUrl) {
+          alert("Please provide a title and video source.");
+          return;
+      }
+
+      const newVideo: AdminVideo = {
+          id: Date.now().toString(),
+          title: vidTitle,
+          url: vidUrl,
+          sourceType: vidSourceType,
+          duration: vidDuration,
+          timestamp: Date.now()
+      };
+
+      onAddVideo(newVideo);
+      
+      // Reset
+      setVidTitle('');
+      setVidUrl('');
+      setVidDuration(1);
+      setVidSourceType('embed');
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      
+      alert('Video Announcement Added!');
   };
 
   // --- AI BOT HANDLER ---
@@ -208,16 +325,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     });
   }, [packages, searchTerm]);
 
-  // Filter for Requests
+  // Filter for Requests - EXCLUDE Video History
   const filteredRequests = useMemo(() => {
-    let result = userRequests;
+    // Only show package requests (where isVideo is false or undefined)
+    let result = userRequests.filter(req => !req.isVideo);
+    
     if (requestSearchTerm.trim()) {
         const q = requestSearchTerm.toLowerCase();
         result = result.filter(req => 
-            req.package.name.toLowerCase().includes(q) ||
-            req.targetPhone.includes(q) ||
-            req.status.toLowerCase().includes(q) ||
-            req.package.price.includes(q)
+            (req.package && req.package.name.toLowerCase().includes(q)) ||
+            (req.targetPhone && req.targetPhone.includes(q)) ||
+            req.status.toLowerCase().includes(q)
         );
     }
     // Sort: Pending first, then newest
@@ -228,7 +346,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     });
   }, [userRequests, requestSearchTerm]);
 
-  const pendingRequestsCount = userRequests.filter(req => req.status === 'Pending').length;
+  const pendingRequestsCount = userRequests.filter(req => !req.isVideo && req.status === 'Pending').length;
 
   return (
     <div className="bg-slate-900 min-h-screen pb-24 animate-fade-in absolute inset-0 z-50 overflow-y-auto">
@@ -253,19 +371,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="flex gap-2 p-1 bg-slate-950/50 rounded-xl border border-slate-700 overflow-x-auto">
             <button 
                 onClick={() => setActiveTab('list')}
-                className={`flex-1 min-w-[80px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'list' ? 'bg-slate-700 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                className={`flex-1 min-w-[70px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'list' ? 'bg-slate-700 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             >
                 <i className="fas fa-list text-sm"></i> List
             </button>
             <button 
                 onClick={() => { resetForm(); setActiveTab('add'); }}
-                className={`flex-1 min-w-[80px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'add' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                className={`flex-1 min-w-[70px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'add' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             >
                 <i className={`fas ${editingPkgId ? 'fa-pencil-alt' : 'fa-plus'} text-sm`}></i> {editingPkgId ? 'Edit' : 'Add'}
             </button>
             <button 
                 onClick={() => setActiveTab('requests')}
-                className={`flex-1 min-w-[80px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 relative ${activeTab === 'requests' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                className={`flex-1 min-w-[70px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 relative ${activeTab === 'requests' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             >
                 {pendingRequestsCount > 0 && (
                     <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -273,8 +391,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <i className="fas fa-envelope-open-text text-sm"></i> Req
             </button>
             <button 
+                onClick={() => setActiveTab('videos')}
+                className={`flex-1 min-w-[70px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'videos' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+            >
+                <i className="fas fa-video text-sm"></i> Vid
+            </button>
+            <button 
+                onClick={() => setActiveTab('promos')}
+                className={`flex-1 min-w-[70px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'promos' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+            >
+                <i className="fas fa-image text-sm"></i> Promo
+            </button>
+            <button 
                 onClick={() => setActiveTab('settings')}
-                className={`flex-1 min-w-[80px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'settings' ? 'bg-yellow-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                className={`flex-1 min-w-[70px] py-3 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${activeTab === 'settings' ? 'bg-yellow-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             >
                 <i className="fas fa-cog text-sm"></i> Set
             </button>
@@ -282,8 +412,234 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       </div>
 
       <div className="p-4">
+          {activeTab === 'promos' && (
+              <div className="space-y-6">
+                  <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl">
+                      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <i className="fas fa-ad text-orange-500"></i> Add Promotion Banner
+                      </h3>
+                      <p className="text-xs text-slate-400 mb-4">
+                          Upload an image to show in the User's History tab. Optionally link it to a specific package so users can click it to view the product.
+                      </p>
+
+                      <div className="space-y-4">
+                        {/* Package Link Dropdown */}
+                        <div>
+                            <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Link to Package (Optional)</label>
+                            <select 
+                                value={promoPackageId} 
+                                onChange={e => setPromoPackageId(e.target.value)}
+                                className="w-full p-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-orange-500 outline-none text-sm"
+                            >
+                                <option value="">-- No specific package --</option>
+                                {packages.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        [{p.net.toUpperCase()}] {p.name} - {p.price} Rs
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* File Upload */}
+                        <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center border-dashed">
+                            {tempPromoImage ? (
+                                <div className="w-full mb-3">
+                                    <img src={tempPromoImage} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+                                    <button 
+                                        onClick={() => { setTempPromoImage(null); if (promoInputRef.current) promoInputRef.current.value = ""; }}
+                                        className="text-xs text-red-400 mt-2 font-bold hover:underline"
+                                    >
+                                        Remove Image
+                                    </button>
+                                </div>
+                            ) : (
+                                <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        ref={promoInputRef}
+                                        onChange={handlePromoFileChange}
+                                        className="block w-full text-xs text-slate-400
+                                        file:mr-4 file:py-3 file:px-4
+                                        file:rounded-xl file:border-0
+                                        file:text-xs file:font-bold
+                                        file:bg-orange-600 file:text-white
+                                        hover:file:bg-orange-500
+                                        cursor-pointer bg-transparent"
+                                />
+                            )}
+                        </div>
+
+                        {/* Submit Button */}
+                        <button 
+                            onClick={handlePromoSubmit}
+                            disabled={!tempPromoImage}
+                            className={`w-full py-3 rounded-xl font-bold shadow-lg transition-all ${tempPromoImage ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                        >
+                            <i className="fas fa-paper-plane mr-2"></i> Post Promotion
+                        </button>
+                      </div>
+                  </div>
+
+                  <div className="space-y-3">
+                      <h3 className="text-lg font-bold text-white">Active Promotions</h3>
+                      {promotions.map(promo => {
+                          // Calculate if expired for visual indication
+                          const isExpired = Date.now() - promo.timestamp > 24 * 60 * 60 * 1000;
+                          const linkedPkg = packages.find(p => p.id === promo.packageId);
+                          
+                          return (
+                            <div key={promo.id} className={`bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center ${isExpired ? 'opacity-50' : ''}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-16 h-10 rounded bg-black overflow-hidden">
+                                        <img src={promo.imageUrl} alt="Promo" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-slate-400">
+                                            {new Date(promo.timestamp).toLocaleDateString()} {new Date(promo.timestamp).toLocaleTimeString()}
+                                        </div>
+                                        {linkedPkg && (
+                                            <div className="text-[10px] text-green-400 flex items-center gap-1 mt-0.5">
+                                                <i className="fas fa-link"></i> {linkedPkg.name}
+                                            </div>
+                                        )}
+                                        {isExpired && <span className="text-[9px] bg-red-500/20 text-red-400 px-1 rounded block mt-1 w-fit">EXPIRED</span>}
+                                    </div>
+                                </div>
+                                <button onClick={() => onDeletePromotion(promo.id)} className="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
+                                    <i className="fas fa-trash"></i>
+                                </button>
+                            </div>
+                          );
+                      })}
+                      {promotions.length === 0 && (
+                          <p className="text-slate-500 text-sm text-center">No active promotions.</p>
+                      )}
+                  </div>
+              </div>
+          )}
+          {/* ... Rest of existing tabs ... */}
+          {/* Just placeholder to ensure we don't cut off other tabs, but in XML I am replacing full file content */}
+          {activeTab === 'videos' && (
+              <div className="space-y-6">
+                  {/* ... videos tab content ... */}
+                  <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl">
+                      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <i className="fas fa-plus-circle text-red-500"></i> Add Announcement
+                      </h3>
+                      
+                      <form onSubmit={handleVideoSubmit} className="space-y-4">
+                          <div>
+                              <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Video Title</label>
+                              <input value={vidTitle} onChange={e => setVidTitle(e.target.value)} className="w-full p-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-red-500 outline-none" placeholder="e.g. New Update Info" required />
+                          </div>
+
+                          {/* Source Type Toggle */}
+                          <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-700">
+                              <button 
+                                type="button" 
+                                onClick={() => { setVidSourceType('embed'); setVidUrl(''); }}
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${vidSourceType === 'embed' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                              >
+                                Embed Link
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => { setVidSourceType('upload'); setVidUrl(''); }}
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${vidSourceType === 'upload' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                              >
+                                Upload Gallery
+                              </button>
+                          </div>
+
+                          {vidSourceType === 'embed' ? (
+                              <div>
+                                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Embed URL</label>
+                                  <input 
+                                    value={vidUrl} 
+                                    onChange={e => setVidUrl(e.target.value)} 
+                                    className="w-full p-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-red-500 outline-none" 
+                                    placeholder="https://www.youtube.com/embed/..." 
+                                  />
+                                  <p className="text-[10px] text-slate-500 mt-1">Use Embed Link (e.g. from YouTube Share {'>'} Embed)</p>
+                              </div>
+                          ) : (
+                              <div>
+                                  <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Select Video</label>
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    ref={fileInputRef}
+                                    onChange={handleVideoFileChange}
+                                    className="block w-full text-xs text-slate-400
+                                    file:mr-4 file:py-3 file:px-4
+                                    file:rounded-xl file:border-0
+                                    file:text-xs file:font-bold
+                                    file:bg-slate-700 file:text-white
+                                    hover:file:bg-slate-600
+                                    cursor-pointer border border-slate-700 rounded-xl bg-slate-900"
+                                  />
+                                  {isUploading && (
+                                      <p className="text-xs text-yellow-500 mt-2 font-bold animate-pulse">
+                                          <i className="fas fa-spinner fa-spin mr-1"></i> Processing video...
+                                      </p>
+                                  )}
+                                  <p className="text-[10px] text-slate-500 mt-1">Max size 100MB. Stored locally on device.</p>
+                              </div>
+                          )}
+
+                          <div>
+                              <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Required Watch Time (Mins)</label>
+                              <select value={vidDuration} onChange={e => setVidDuration(parseInt(e.target.value))} className="w-full p-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-red-500 outline-none">
+                                  <option value={1}>1 Minute</option>
+                                  <option value={2}>2 Minutes</option>
+                                  <option value={3}>3 Minutes</option>
+                              </select>
+                          </div>
+                          
+                          <button 
+                            type="submit" 
+                            disabled={isUploading}
+                            className={`w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg transition-colors ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                              {isUploading ? 'Uploading...' : 'Post Video'}
+                          </button>
+                      </form>
+                  </div>
+
+                  <div className="space-y-3">
+                      <h3 className="text-lg font-bold text-white">Active Videos</h3>
+                      {adminVideos.map(video => {
+                          const isExpired = Date.now() - video.timestamp > 24 * 60 * 60 * 1000;
+                          return (
+                            <div key={video.id} className={`bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center ${isExpired ? 'opacity-50' : ''}`}>
+                                <div>
+                                    <h4 className="font-bold text-white flex items-center gap-2">
+                                        {video.title}
+                                        {video.sourceType === 'upload' && (
+                                            <span className="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 border border-slate-600">FILE</span>
+                                        )}
+                                    </h4>
+                                    <div className="text-xs text-slate-400">
+                                        {video.duration} min • {new Date(video.timestamp).toLocaleDateString()}
+                                    </div>
+                                    {isExpired && <span className="text-[9px] bg-red-500/20 text-red-400 px-1 rounded">EXPIRED (Hidden from users)</span>}
+                                </div>
+                                <button onClick={() => onDeleteVideo(video.id)} className="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
+                                    <i className="fas fa-trash"></i>
+                                </button>
+                            </div>
+                          );
+                      })}
+                      {adminVideos.length === 0 && (
+                          <p className="text-slate-500 text-sm text-center">No videos uploaded yet.</p>
+                      )}
+                  </div>
+              </div>
+          )}
+
           {activeTab === 'requests' && (
               <div className="space-y-4">
+                  {/* ... requests tab ... */}
                   <div className="flex items-center justify-between">
                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <i className="fas fa-inbox text-purple-500"></i> User Requests
@@ -318,11 +674,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <div key={idx} className={`bg-slate-800 p-4 rounded-2xl border ${req.status === 'Pending' ? 'border-purple-500/50 shadow-purple-500/10' : 'border-slate-700'} shadow-lg transition-all hover:border-slate-600`}>
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-lg shadow-sm" style={{ backgroundColor: NETWORKS.find(n => n.id === req.package.net)?.color || '#555' }}>
-                                            {req.package.name.charAt(0)}
-                                        </div>
+                                        {req.package && (
+                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-lg shadow-sm" style={{ backgroundColor: NETWORKS.find(n => n.id === req.package!.net)?.color || '#555' }}>
+                                                {req.package.name.charAt(0)}
+                                            </div>
+                                        )}
                                         <div>
-                                            <h4 className="font-bold text-white text-sm">{req.package.name}</h4>
+                                            <h4 className="font-bold text-white text-sm">{req.package?.name || 'Unknown Package'}</h4>
                                             <div className="text-xs text-slate-400 flex items-center gap-1">
                                                 <i className="fas fa-phone-alt text-[10px]"></i>
                                                 {req.targetPhone}
@@ -341,7 +699,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <div className="bg-slate-900/50 rounded-xl p-3 mb-3 flex justify-between items-center border border-slate-700/50">
                                     <div className="flex flex-col">
                                         <span className="text-[10px] text-slate-500 uppercase font-bold">Price</span>
-                                        <span className="text-white font-bold text-sm">{req.package.price} Rs</span>
+                                        <span className="text-white font-bold text-sm">{req.package?.price || 0} Rs</span>
                                     </div>
                                     <div className="flex flex-col text-right">
                                         <span className="text-[10px] text-slate-500 uppercase font-bold">Date</span>
@@ -374,6 +732,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {activeTab === 'settings' && (
               <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl">
+                  {/* ... settings tab ... */}
                   <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <i className="fas fa-coins text-yellow-500"></i> Coin Configuration
                   </h3>
@@ -430,6 +789,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {activeTab === 'add' && (
             <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl relative overflow-hidden">
+                {/* ... add/edit tab ... */}
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <i className={`fas ${editingPkgId ? 'fa-pencil-alt' : 'fa-plus-circle'} text-blue-500`}></i> 
                     {editingPkgId ? 'Edit Package' : 'Add New Package'}
@@ -590,7 +950,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {activeTab === 'list' && (
             <div className="space-y-4">
-                {/* Search Bar */}
+                {/* ... list tab ... */}
                 <div className="relative sticky top-0 z-10">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i className="fas fa-search text-slate-500"></i>

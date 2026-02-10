@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { UserProfile, NetworkType, PackageData, HistoryItem } from '../types';
+import { UserProfile, NetworkType, PackageData, HistoryItem, AdminVideo, Promotion } from '../types';
 import { PACKAGES } from '../constants';
 import Header from './Header';
 import NetworkSelector from './NetworkSelector';
@@ -14,6 +14,7 @@ import CoinPopup from './CoinPopup';
 import BannerSlider from './BannerSlider';
 import DashboardAd from './DashboardAd';
 import PopunderAd from './PopunderAd';
+import NewsModal from './NewsModal';
 
 interface DashboardProps {
   user: UserProfile;
@@ -29,6 +30,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
   // Navigation State
   const [activeTab, setActiveTab] = useState('Home');
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showNewsModal, setShowNewsModal] = useState(false);
 
   // User State (Coins, etc.)
   const [userCoins, setUserCoins] = useState(initialUser.coins || 0);
@@ -36,6 +38,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
   // Data State
   const [allPackages, setAllPackages] = useState<PackageData[]>(PACKAGES);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  
+  // Videos & Promotions State
+  const [adminVideos, setAdminVideos] = useState<AdminVideo[]>([
+      { id: 'v1', title: 'Welcome to EasySelect PK!', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', sourceType: 'embed', duration: 1, timestamp: Date.now(), likes: 120, dislikes: 5 }
+  ]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   
   // Filter State
   const [currentNet, setCurrentNet] = useState<NetworkType>('telenor');
@@ -68,6 +76,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
   useEffect(() => {
     setUserCoins(initialUser.coins);
   }, [initialUser]);
+
+  // --- 24 HOUR EXPIRY LOGIC ---
+  // We filter out videos and promotions older than 24 hours for the USER view.
+  // The Admin usually sees everything or we can filter there too, but let's filter globally for display.
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  
+  const activeVideos = useMemo(() => {
+      // Show only videos created in last 24 hours
+      return adminVideos.filter(v => (Date.now() - v.timestamp) < ONE_DAY_MS);
+  }, [adminVideos]);
+
+  const activePromotions = useMemo(() => {
+      // Show only promotions created in last 24 hours
+      return promotions.filter(p => (Date.now() - p.timestamp) < ONE_DAY_MS);
+  }, [promotions]);
+
 
   // Derived state for filtered packages
   const filteredPackages = useMemo(() => {
@@ -163,6 +187,69 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
     ));
   };
 
+  // Video Handlers
+  const handleAddVideo = (video: AdminVideo) => {
+      setAdminVideos(prev => [video, ...prev]);
+  };
+  
+  const handleDeleteVideo = (id: string) => {
+      setAdminVideos(prev => prev.filter(v => v.id !== id));
+  };
+
+  const handleVideoWatched = (video: AdminVideo) => {
+      // Add to History
+      const historyItem: HistoryItem = {
+          isVideo: true,
+          video: video,
+          date: new Date().toISOString(),
+          timestamp: Date.now(),
+          status: 'Watched'
+      };
+      setHistory(prev => [historyItem, ...prev]);
+      setActiveTab('History');
+      setShowNewsModal(false);
+      // No Coin Reward for this
+  };
+  
+  // Handle Like/Dislike
+  const handleVideoReaction = (videoId: string, type: 'like' | 'dislike') => {
+      setAdminVideos(prev => prev.map(v => {
+          if (v.id === videoId) {
+              const currentLikes = v.likes || 0;
+              const currentDislikes = v.dislikes || 0;
+              
+              if (type === 'like') {
+                  return { ...v, likes: currentLikes + 1 };
+              } else {
+                  return { ...v, dislikes: currentDislikes + 1 };
+              }
+          }
+          return v;
+      }));
+  };
+
+  // Promotion Handlers
+  const handleAddPromotion = (promo: Promotion) => {
+      setPromotions(prev => [promo, ...prev]);
+  };
+
+  const handleDeletePromotion = (id: string) => {
+      setPromotions(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Handle click on promotion slide
+  const handlePromoClick = (packageId?: string) => {
+      if (!packageId) return;
+      const pkg = allPackages.find(p => p.id === packageId);
+      if (pkg) {
+          // Open details/confirmation modal directly
+          handleActivateClick(pkg);
+      } else {
+          // Fallback: Just navigate to home if package not found (maybe deleted)
+          setActiveTab('Home');
+      }
+  };
+
   // View Routing
   const renderContent = () => {
     if (isAdminMode) {
@@ -179,13 +266,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
                 setWelcomeBonus={setWelcomeBonus}
                 userRequests={history}
                 onUpdateRequestStatus={handleUpdateStatus}
+                adminVideos={adminVideos} // Admin sees ALL videos to manage them
+                onAddVideo={handleAddVideo}
+                onDeleteVideo={handleDeleteVideo}
+                promotions={promotions} // Admin sees ALL promotions
+                onAddPromotion={handleAddPromotion}
+                onDeletePromotion={handleDeletePromotion}
             />
         );
     }
 
     switch (activeTab) {
         case 'History':
-            return <HistoryView history={history} showAds={!isAdminUser} />;
+            return (
+                <HistoryView 
+                    history={history} 
+                    showAds={!isAdminUser} 
+                    activePromotions={activePromotions}
+                    onPromoClick={handlePromoClick}
+                />
+            );
         
         case 'Profile':
             return (
@@ -271,6 +371,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
                 showAds={!isAdminUser}
                 isAdmin={isAdminUser}                      // Pass prop
                 onOpenAdmin={() => setIsAdminMode(true)}   // Pass handler
+                onOpenNews={() => setShowNewsModal(true)}  // Open News
               />
           )}
 
@@ -295,6 +396,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user: initialUser, coinMultiplier
               amount={popupConfig.amount} 
               reason={popupConfig.reason} 
               onClose={() => setPopupConfig({ ...popupConfig, show: false })} 
+          />
+      )}
+
+      {showNewsModal && (
+          <NewsModal 
+             videos={activeVideos} // Only pass active videos (24h)
+             onClose={() => setShowNewsModal(false)}
+             onVideoWatched={handleVideoWatched}
+             onVideoReaction={handleVideoReaction}
           />
       )}
     </div>
